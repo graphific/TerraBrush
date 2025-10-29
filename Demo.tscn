@@ -79,8 +79,6 @@ AlbedoTexture = ExtResource("3_dxgqb")
 NormalTexture = ExtResource("5_6an3f")
 RoughnessTexture = ExtResource("6_oy27c")
 HeightTexture = ExtResource("4_w0eiu")
-TextureDetail = -1
-Triplanar = false
 
 [sub_resource type="Resource" id="Resource_al3h6"]
 script = ExtResource("7_yvfmb")
@@ -89,8 +87,6 @@ AlbedoTexture = ExtResource("8_7f4ek")
 NormalTexture = ExtResource("9_satbt")
 RoughnessTexture = ExtResource("10_lt8js")
 HeightTexture = ExtResource("8_srk7a")
-TextureDetail = -1
-Triplanar = false
 
 [sub_resource type="Resource" id="Resource_0e1fb"]
 script = ExtResource("7_yvfmb")
@@ -99,8 +95,6 @@ AlbedoTexture = ExtResource("11_1mp7w")
 NormalTexture = ExtResource("12_36x75")
 RoughnessTexture = ExtResource("13_43kc8")
 HeightTexture = ExtResource("11_b3m5x")
-TextureDetail = -1
-Triplanar = false
 
 [sub_resource type="Resource" id="Resource_1laah"]
 script = ExtResource("7_yvfmb")
@@ -109,8 +103,6 @@ AlbedoTexture = ExtResource("14_v2wx4")
 NormalTexture = ExtResource("15_6s3cb")
 RoughnessTexture = ExtResource("16_d4u8t")
 HeightTexture = ExtResource("17_quhjx")
-TextureDetail = -1
-Triplanar = false
 
 [sub_resource type="Resource" id="Resource_xss3l"]
 script = ExtResource("7_yvfmb")
@@ -119,8 +111,6 @@ AlbedoTexture = ExtResource("17_ngv3d")
 NormalTexture = ExtResource("18_3axer")
 RoughnessTexture = ExtResource("19_b7yqj")
 HeightTexture = ExtResource("17_l1sku")
-TextureDetail = -1
-Triplanar = false
 
 [sub_resource type="Resource" id="Resource_nwvvi"]
 script = ExtResource("20_mt8yi")
@@ -134,31 +124,17 @@ noise_type = 0
 fractal_type = 0
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_rb8l3"]
-seamless = true
-color_ramp = SubResource("Gradient_andab")
 noise = SubResource("FastNoiseLite_6gfss")
+color_ramp = SubResource("Gradient_andab")
+seamless = true
 
 [sub_resource type="Resource" id="Resource_uou6r"]
 script = ExtResource("24_4t1h3")
-Strategy = 1
 Mesh = ExtResource("26_eqy4b")
 MeshScale = Vector3(3, 3, 3)
-WindStrength = 0.1
-VisualInstanceLayers = 1
-LODLevels = 3
-LODRowsPerLevel = 50
-LODInitialCellWidth = 1.0
-Albedo = Color(1, 1, 1, 1)
 AlbedoTextures = [ExtResource("25_e6dcx")]
-NearestTextureFilter = false
 UseGroundColor = true
-CastShadow = false
-UseBrushScale = true
 ScaleNoiseTexture = SubResource("NoiseTexture2D_rb8l3")
-RandomPlacementRange = 3.0
-ApplyOnTextureIndexes = PackedInt32Array()
-MaximumRenderDistance = 50
-EditorMaximumRenderDistance = 50
 
 [sub_resource type="Resource" id="Resource_msipp"]
 script = ExtResource("25_q5pkn")
@@ -166,43 +142,29 @@ Definition = SubResource("Resource_uou6r")
 
 [sub_resource type="Resource" id="Resource_edv2t"]
 script = ExtResource("42_hjjk2")
-Strategy = 1
-ObjectFrequency = -1
 RandomRange = 4.0
 RandomYRotation = true
 RandomSize = true
-RandomSizeFactorMin = 0.2
-RandomSizeFactorMax = 1.2
 ObjectScenes = [ExtResource("28_7kh4w"), ExtResource("29_lcqjd"), ExtResource("30_iv0fo"), ExtResource("31_eut0r"), ExtResource("32_bygrd"), ExtResource("33_b356k"), ExtResource("34_fbx31"), ExtResource("35_bfsrw"), ExtResource("36_0lkg2"), ExtResource("37_53qnf"), ExtResource("38_ch8bs"), ExtResource("39_6yo16")]
 LODList = []
 LODMeshes = []
-UpdateDistanceThreshold = 1.0
-UpdateTimeFrequency = 0.1
-VisualInstanceLayers = 1
 
 [sub_resource type="Resource" id="Resource_0o1vb"]
 script = ExtResource("43_y5duh")
 Definition = SubResource("Resource_edv2t")
-Hide = false
 
 [sub_resource type="FastNoiseLite" id="FastNoiseLite_cj3iw"]
 
 [sub_resource type="NoiseTexture2D" id="NoiseTexture2D_nbj8i"]
-seamless = true
 noise = SubResource("FastNoiseLite_cj3iw")
+seamless = true
 
 [sub_resource type="Resource" id="Resource_ibahd"]
 script = ExtResource("25_q46kk")
-SnowFactor = 1.0
-SnowInnerOffset = 0.3
 SnowColorTexture = ExtResource("14_v2wx4")
 SnowColorNormal = ExtResource("15_6s3cb")
 SnowColorRoughness = ExtResource("16_d4u8t")
-SnowColorDetail = 20.0
 Noise = SubResource("NoiseTexture2D_nbj8i")
-NoiseFactor = 0.0
-Metallic = 0.0
-VisualInstanceLayers = 1
 
 [sub_resource type="Resource" id="Resource_ji8n5"]
 script = ExtResource("45_jnhsd")
@@ -218,7 +180,6 @@ metadata/_custom_type_script = "uid://1jhl1ptx6ntv"
 
 [sub_resource type="Resource" id="Resource_cwvp6"]
 script = ExtResource("48_gk6oc")
-ZonePosition = Vector2i(0, 0)
 HeightMapTexture = ExtResource("3_ckogt")
 SplatmapsTexture = [ExtResource("21_uuhvh"), ExtResource("22_rxty4")]
 FoliagesTexture = [ExtResource("25_001cp")]
@@ -254,7 +215,6 @@ Foliages = [SubResource("Resource_msipp")]
 Objects = [SubResource("Resource_0o1vb")]
 WaterDefinition = ExtResource("23_rpaxe")
 SnowDefinition = SubResource("Resource_ibahd")
-ShowMetaInfo = false
 MetaInfoLayers = [SubResource("Resource_ji8n5"), SubResource("Resource_ph4rl")]
 TerrainZones = SubResource("Resource_dp21i")
 metadata/_edit_lock_ = true
