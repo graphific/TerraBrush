@@ -157,14 +157,62 @@ public partial class TerraBrush : TerraBrushTool
     }
 
     [ExportGroup("LOD")]
+    private int _lodLevels = 5;
     [Export]
-    public int LODLevels { get; set; } = 5;
+    public int LODLevels
+    {
+        get => _lodLevels;
+        set
+        {
+            if (_lodLevels != value)
+            {
+                _lodLevels = value;
+                // Rebuild terrain when LOD settings change in the editor
+                if (Engine.IsEditorHint() && IsInsideTree())
+                {
+                    CallDeferred(MethodName.OnUpdateTerrainSettings);
+                }
+            }
+        }
+    }
 
+    private int _lodRowsPerLevel = 50;
     [Export]
-    public int LODRowsPerLevel { get; set; } = 50;
+    public int LODRowsPerLevel
+    {
+        get => _lodRowsPerLevel;
+        set
+        {
+            if (_lodRowsPerLevel != value)
+            {
+                _lodRowsPerLevel = value;
+                // Rebuild terrain when LOD settings change in the editor
+                if (Engine.IsEditorHint() && IsInsideTree())
+                {
+                    CallDeferred(MethodName.OnUpdateTerrainSettings);
+                }
+            }
+        }
+    }
 
+    private float _lodInitialCellWidth = 1;
     [Export]
-    public float LODInitialCellWidth { get; set; } = 1;
+    public float LODInitialCellWidth
+    {
+        get => _lodInitialCellWidth;
+        set
+        {
+            if (!Mathf.IsEqualApprox(_lodInitialCellWidth, value))
+            {
+                _lodInitialCellWidth = value;
+                // Rebuild terrain when LOD settings change in the editor
+                if (Engine.IsEditorHint() && IsInsideTree())
+                {
+                    CallDeferred(MethodName.OnUpdateTerrainSettings);
+                }
+            }
+        }
+    }
 
     [ExportGroup("Collisions")]
     [Export]
@@ -286,11 +334,49 @@ public partial class TerraBrush : TerraBrushTool
     }
 
     [ExportGroup("Water")]
+    // Global toggle for water visibility - provides quick show/hide for water
+    private bool _showWater = true;
+    [Export]
+    public bool ShowWater
+    {
+        get => _showWater;
+        set
+        {
+            if (_showWater != value)
+            {
+                _showWater = value;
+                // Update visibility in real-time when changed in the editor inspector
+                if (Engine.IsEditorHint() && IsInsideTree())
+                {
+                    CallDeferred(MethodName.UpdateWaterVisibility);
+                }
+            }
+        }
+    }
 
     [Export]
     public override WaterResource WaterDefinition { get; set; }
 
     [ExportGroup("Snow")]
+    // Global toggle for snow visibility - provides quick show/hide for snow
+    private bool _showSnow = true;
+    [Export]
+    public bool ShowSnow
+    {
+        get => _showSnow;
+        set
+        {
+            if (_showSnow != value)
+            {
+                _showSnow = value;
+                // Update visibility in real-time when changed in the editor inspector
+                if (Engine.IsEditorHint() && IsInsideTree())
+                {
+                    CallDeferred(MethodName.UpdateSnowVisibility);
+                }
+            }
+        }
+    }
 
     [Export]
     public override SnowResource SnowDefinition { get; set; }
@@ -814,6 +900,9 @@ public partial class TerraBrush : TerraBrushTool
             _waterNode.NormalMap2 = await Utils.WaitForTextureReady(WaterDefinition.WaterNormalMap2);
 
             _waterNodeContainer.AddChild(_waterNode);
+
+            // Apply visibility setting for water
+            _waterNode.Visible = ShowWater;
         }
     }
 
@@ -857,6 +946,9 @@ public partial class TerraBrush : TerraBrushTool
         }
 
         _snowNodeContainer.AddChild(_snowNode);
+
+        // Apply visibility setting for snow
+        _snowNode.Visible = ShowSnow;
     }
 
     private void CreateMetaInfo()
@@ -1117,5 +1209,37 @@ public partial class TerraBrush : TerraBrushTool
                 foliageNode.Visible = ShowFoliage && Foliages[i].Visible;
             }
         }
+    }
+
+    /// <summary>
+    /// Updates the visibility of water based on the ShowWater toggle.
+    /// Called automatically when ShowWater changes in the editor.
+    /// Can also be called manually to refresh visibility state.
+    /// </summary>
+    public void UpdateWaterVisibility()
+    {
+        // Early exit if water doesn't exist
+        if (_waterNode == null)
+        {
+            return;
+        }
+
+        _waterNode.Visible = ShowWater;
+    }
+
+    /// <summary>
+    /// Updates the visibility of snow based on the ShowSnow toggle.
+    /// Called automatically when ShowSnow changes in the editor.
+    /// Can also be called manually to refresh visibility state.
+    /// </summary>
+    public void UpdateSnowVisibility()
+    {
+        // Early exit if snow doesn't exist
+        if (_snowNode == null)
+        {
+            return;
+        }
+
+        _snowNode.Visible = ShowSnow;
     }
 }
