@@ -74,10 +74,20 @@ public static class Utils
 
                     if (firstImage)
                     {
-                        // Store dimensions and format from first valid image as the standard
+                        // Store dimensions from first valid image as the standard
                         width = textureImage.GetWidth();
                         height = textureImage.GetHeight();
-                        targetFormat = textureImage.GetFormat();
+
+                        // Use RGBA8 as target format to ensure quality and compatibility
+                        // This prevents issues with compressed or unusual formats
+                        targetFormat = Image.Format.Rgba8;
+
+                        // Convert first image to RGBA8 if needed
+                        if (textureImage.GetFormat() != targetFormat)
+                        {
+                            textureImage.Convert(targetFormat);
+                        }
+
                         firstImage = false;
                     }
                     else
@@ -90,7 +100,7 @@ public static class Utils
                         }
 
                         // Godot 4.x compatibility fix: Ensure all images have the same pixel format
-                        // Convert format if it doesn't match to prevent "All images must share the same format" error
+                        // Convert to RGBA8 for consistency and quality
                         if (textureImage.GetFormat() != targetFormat)
                         {
                             textureImage.Convert(targetFormat);

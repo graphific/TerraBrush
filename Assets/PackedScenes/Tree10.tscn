@@ -1,8 +1,9 @@
-[gd_scene load_steps=11 format=4 uid="uid://cwh3uwqhgvdh3"]
+[gd_scene load_steps=12 format=4 uid="uid://cwh3uwqhgvdh3"]
 
 [ext_resource type="Texture2D" uid="uid://c8q4rnjhh3ydn" path="res://Assets/Models/shapespark-low-poly-plants-kit_bark.jpg" id="1_yfrax"]
 [ext_resource type="Texture2D" uid="uid://dxm7fn7rtvvdq" path="res://Assets/Models/shapespark-low-poly-plants-kit_branch-2-01.png" id="2_onfrd"]
 [ext_resource type="Texture2D" uid="uid://dbfc732tumyvf" path="res://Assets/Models/shapespark-low-poly-plants-kit_branch-2-02.png" id="3_yiqkq"]
+[ext_resource type="ArrayOccluder3D" uid="uid://bi88prg3rislr" path="res://Assets/PackedScenes/Tree10.occ" id="4_whyph"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_hl32b"]
 resource_name = "trunk-01"
@@ -122,3 +123,6 @@ mesh = SubResource("ArrayMesh_4mkl7")
 skeleton = NodePath("")
 surface_material_override/1 = SubResource("StandardMaterial3D_ovj5p")
 surface_material_override/2 = SubResource("StandardMaterial3D_hit50")
+
+[node name="OccluderInstance3D" type="OccluderInstance3D" parent="."]
+occluder = ExtResource("4_whyph")

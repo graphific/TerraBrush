@@ -1,4 +1,4 @@
-[gd_scene load_steps=82 format=3 uid="uid://v4o1p7h4rn3j"]
+[gd_scene load_steps=85 format=3 uid="uid://v4o1p7h4rn3j"]
 
 [ext_resource type="Texture2D" uid="uid://b8oilw31hv88p" path="res://Assets/hdri/hilly_terrain_01_puresky_1k.hdr" id="1_iuqbl"]
 [ext_resource type="Script" uid="uid://rucv2wgp8eli" path="res://Demo.cs" id="1_ntfcg"]
@@ -38,6 +38,7 @@
 [ext_resource type="Script" uid="uid://di03satw2avie" path="res://addons/terrabrush/Scripts/EditorResources/SnowResource.cs" id="25_q46kk"]
 [ext_resource type="ArrayMesh" uid="uid://b3jybvl4hcmx5" path="res://Assets/Models/Foliage/foliage.obj" id="26_eqy4b"]
 [ext_resource type="PackedScene" uid="uid://bcw1uunyy5sdy" path="res://Assets/PackedScenes/Tree1.tscn" id="28_7kh4w"]
+[ext_resource type="Script" uid="uid://dnyi3xuoea036" path="res://addons/terrabrush/Scripts/EditorResources/ObjectOctreeLODDefinitionResource.cs" id="29_jnhsd"]
 [ext_resource type="PackedScene" uid="uid://by5jhpanviatg" path="res://Assets/PackedScenes/Tree2.tscn" id="29_lcqjd"]
 [ext_resource type="PackedScene" uid="uid://dd0rnuhitww8y" path="res://Assets/PackedScenes/Tree3.tscn" id="30_iv0fo"]
 [ext_resource type="PackedScene" uid="uid://8itaivqs7rvc" path="res://Assets/PackedScenes/Tree4.tscn" id="31_eut0r"]
@@ -66,7 +67,12 @@ sky_material = SubResource("PanoramaSkyMaterial_a58er")
 [sub_resource type="Environment" id="Environment_via5m"]
 background_mode = 2
 sky = SubResource("Sky_jyr7x")
-tonemap_mode = 3
+ambient_light_source = 2
+ambient_light_color = Color(0.3987234, 0.39250904, 0.66904646, 0.77254903)
+ambient_light_energy = 2.34
+tonemap_mode = 4
+tonemap_exposure = 1.11
+ssr_enabled = true
 fog_light_color = Color(0.916252, 0.702711, 0.0144581, 1)
 volumetric_fog_density = 0.0158
 volumetric_fog_albedo = Color(0.975389, 0.862045, 0.25784, 1)
@@ -140,13 +146,29 @@ ScaleNoiseTexture = SubResource("NoiseTexture2D_rb8l3")
 script = ExtResource("25_q5pkn")
 Definition = SubResource("Resource_uou6r")
 
+[sub_resource type="Resource" id="Resource_3ykeo"]
+script = ExtResource("29_jnhsd")
+MaxDistance = 50.0
+AddCollision = true
+AutomaticLOD = true
+AutomaticLODTargetVertices = 1000
+metadata/_custom_type_script = "uid://dnyi3xuoea036"
+
+[sub_resource type="Resource" id="Resource_ujkiv"]
+script = ExtResource("29_jnhsd")
+MaxDistance = 100.0
+AutomaticLOD = true
+AutomaticLODTargetVertices = 500
+metadata/_custom_type_script = "uid://dnyi3xuoea036"
+
 [sub_resource type="Resource" id="Resource_edv2t"]
 script = ExtResource("42_hjjk2")
+Strategy = 2
 RandomRange = 4.0
 RandomYRotation = true
 RandomSize = true
 ObjectScenes = [ExtResource("28_7kh4w"), ExtResource("29_lcqjd"), ExtResource("30_iv0fo"), ExtResource("31_eut0r"), ExtResource("32_bygrd"), ExtResource("33_b356k"), ExtResource("34_fbx31"), ExtResource("35_bfsrw"), ExtResource("36_0lkg2"), ExtResource("37_53qnf"), ExtResource("38_ch8bs"), ExtResource("39_6yo16")]
-LODList = []
+LODList = [SubResource("Resource_3ykeo"), SubResource("Resource_ujkiv")]
 LODMeshes = []
 
 [sub_resource type="Resource" id="Resource_0o1vb"]
@@ -215,9 +237,10 @@ Foliages = [SubResource("Resource_msipp")]
 Objects = [SubResource("Resource_0o1vb")]
 WaterDefinition = ExtResource("23_rpaxe")
 SnowDefinition = SubResource("Resource_ibahd")
+ShowMetaInfo = false
 MetaInfoLayers = [SubResource("Resource_ji8n5"), SubResource("Resource_ph4rl")]
 TerrainZones = SubResource("Resource_dp21i")
-metadata/_edit_lock_ = true
+metadata/_edit_lock_ = false
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="." node_paths=PackedStringArray("Camera", "Terrain", "DebugLabel", "ShapeCast")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -94.4413, 21.1014, 57.3405)
