@@ -82,7 +82,14 @@ public static class Utils
                         // This prevents issues with compressed or unusual formats
                         targetFormat = Image.Format.Rgba8;
 
-                        // Convert first image to RGBA8 if needed
+                        // Godot 4.x fix: Decompress compressed textures before converting
+                        // Compressed formats (DXT, ETC, ASTC, BPTC) cannot be directly converted
+                        if (textureImage.IsCompressed())
+                        {
+                            textureImage.Decompress();
+                        }
+
+                        // Convert to RGBA8 if needed (after decompression)
                         if (textureImage.GetFormat() != targetFormat)
                         {
                             textureImage.Convert(targetFormat);
@@ -97,6 +104,13 @@ public static class Utils
                         if (textureImage.GetWidth() != width || textureImage.GetHeight() != height)
                         {
                             textureImage.Resize(width, height);
+                        }
+
+                        // Godot 4.x fix: Decompress compressed textures before converting
+                        // This prevents "Cannot convert to (or from) compressed formats" error
+                        if (textureImage.IsCompressed())
+                        {
+                            textureImage.Decompress();
                         }
 
                         // Godot 4.x compatibility fix: Ensure all images have the same pixel format

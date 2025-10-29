@@ -240,7 +240,7 @@ SnowDefinition = SubResource("Resource_ibahd")
 ShowMetaInfo = false
 MetaInfoLayers = [SubResource("Resource_ji8n5"), SubResource("Resource_ph4rl")]
 TerrainZones = SubResource("Resource_dp21i")
-metadata/_edit_lock_ = false
+metadata/_edit_lock_ = true
 
 [node name="CharacterBody3D" type="CharacterBody3D" parent="." node_paths=PackedStringArray("Camera", "Terrain", "DebugLabel", "ShapeCast")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -94.4413, 21.1014, 57.3405)
