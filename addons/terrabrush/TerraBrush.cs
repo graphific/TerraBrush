@@ -7,31 +7,33 @@ using Godot;
 
 namespace TerraBrush;
 
-public enum ObjectLoadingStrategy {
+public enum ObjectLoadingStrategy
+{
     ThreadedInEditorOnly = 1,
     Threaded = 2,
     NotThreaded = 3
 }
 
 [Tool]
-public partial class TerraBrush : TerraBrushTool {
+public partial class TerraBrush : TerraBrushTool
+{
     public const int HeightMapFactor = 1;
 
-	[Signal]
-	public delegate void TerrainLoadedEventHandler();
+    [Signal]
+    public delegate void TerrainLoadedEventHandler();
 
     private int _zonesSize = 256;
     private int _resolution = 1;
     private ShaderMaterial _customShader;
     private Terrain _terrain;
     private TextureSetResource[] _texturesSet;
-    private ImageTexture[] _splatmaps = new ImageTexture[]{};
+    private ImageTexture[] _splatmaps = new ImageTexture[] { };
     private Node3D _foliagesNode = null;
     private Node3D _objectsContainerNode = null;
     private Node3D _waterNodeContainer = null;
-    private Water _waterNode  = null;
+    private Water _waterNode = null;
     private Node3D _snowNodeContainer = null;
-    private Snow _snowNode  = null;
+    private Snow _snowNode = null;
     private Dictionary<ImageTexture, Image> _imageTexturesCache = new();
     private Texture2D _defaultNoise;
     private string _dataPath;
@@ -42,17 +44,23 @@ public partial class TerraBrush : TerraBrushTool {
     public Node3D ObjectsContainerNode => _objectsContainerNode;
     public Texture2D DefaultNoise => _defaultNoise;
 
-    public Action TerrainSettingsUpdated { get;set; }
-    public bool AutoAddZones { get;set; }
+    public Action TerrainSettingsUpdated { get; set; }
+    public bool AutoAddZones { get; set; }
 
     [ExportGroup("TerrainSettings")]
     [Export]
-    public override int ZonesSize {
-        get {
+    public override int ZonesSize
+    {
+        get
+        {
             return _zonesSize;
-        } set {
-            if (_terrain == null) {
-                if (Resolution != 1 && !Utils.IsPowerOfTwo(value - 1)) {
+        }
+        set
+        {
+            if (_terrain == null)
+            {
+                if (Resolution != 1 && !Utils.IsPowerOfTwo(value - 1))
+                {
                     OS.Alert("When the resolution is not 1, it must be a (power of 2) + 1 (ex. 257).");
                     return;
                 }
@@ -60,24 +68,33 @@ public partial class TerraBrush : TerraBrushTool {
                 _zonesSize = value;
 
                 UpdateConfigurationWarnings();
-            } else if (value != _zonesSize) {
+            }
+            else if (value != _zonesSize)
+            {
                 OS.Alert("The ZonesSize property cannot change once the terrain has been created. Make sure you remove the terrain before changing the ZonesSize.");
             }
         }
     }
 
     [Export]
-    public override int Resolution {
-        get {
+    public override int Resolution
+    {
+        get
+        {
             return _resolution;
-        } set {
-            if (_terrain == null) {
-                if (value < 1) {
+        }
+        set
+        {
+            if (_terrain == null)
+            {
+                if (value < 1)
+                {
                     OS.Alert("The minimum value for the resolution is 1.");
                     return;
                 }
 
-                if (value > 1 && !Utils.IsPowerOfTwo(value)){
+                if (value > 1 && !Utils.IsPowerOfTwo(value))
+                {
                     OS.Alert("When the resolution is not 1, it must be a power of 2.");
                     return;
                 }
@@ -85,20 +102,26 @@ public partial class TerraBrush : TerraBrushTool {
                 _resolution = value;
 
                 UpdateConfigurationWarnings();
-            } else if (value != _resolution) {
+            }
+            else if (value != _resolution)
+            {
                 OS.Alert("The Resolution property cannot change once the terrain has been created. Make sure you remove the terrain before changing the Resolution.");
             }
         }
     }
 
     [Export]
-    public bool CollisionOnly { get;set; }
+    public bool CollisionOnly { get; set; }
 
     [Export(PropertyHint.Dir)]
-    public override string DataPath {
-        get {
+    public override string DataPath
+    {
+        get
+        {
             return _dataPath;
-        } set{
+        }
+        set
+        {
             _dataPath = value;
 
             UpdateConfigurationWarnings();
@@ -106,19 +129,26 @@ public partial class TerraBrush : TerraBrushTool {
     }
 
     [Export(PropertyHint.Layers3DRender)]
-    public int VisualInstanceLayers { get;set; } = 1;
+    public int VisualInstanceLayers { get; set; } = 1;
 
-    [Export] public ShaderMaterial CustomShader {
-        get {
+    [Export]
+    public ShaderMaterial CustomShader
+    {
+        get
+        {
             return _customShader;
-        } set {
+        }
+        set
+        {
             _customShader = value;
 
-            if (value != null && value.Shader == null) {
+            if (value != null && value.Shader == null)
+            {
                 var defaultShader = ResourceLoader.Load<Shader>("res://addons/terrabrush/Resources/Shaders/heightmap_clipmap_shader.gdshader");
                 var defaultCode = defaultShader.Code;
 
-                var shader = new Shader {
+                var shader = new Shader
+                {
                     Code = defaultCode
                 };
                 value.Shader = shader;
@@ -128,125 +158,242 @@ public partial class TerraBrush : TerraBrushTool {
 
     [ExportGroup("LOD")]
     [Export]
-    public int LODLevels { get;set; } = 5;
+    public int LODLevels { get; set; } = 5;
 
     [Export]
-    public int LODRowsPerLevel { get;set; } = 50;
+    public int LODRowsPerLevel { get; set; } = 50;
 
     [Export]
-    public float LODInitialCellWidth { get;set; } = 1;
+    public float LODInitialCellWidth { get; set; } = 1;
 
     [ExportGroup("Collisions")]
     [Export]
-    public bool CreateCollisionInThread { get;set; } = true;
+    public bool CreateCollisionInThread { get; set; } = true;
 
     [Export(PropertyHint.Layers3DPhysics)]
-    public int CollisionLayers { get;set; } = 1;
+    public int CollisionLayers { get; set; } = 1;
 
     [Export(PropertyHint.Layers3DPhysics)]
-    public int CollisionMask { get;set; } = 1;
+    public int CollisionMask { get; set; } = 1;
 
     [ExportGroup("Textures")]
     [Export]
-    public override TextureSetsResource TextureSets { get;set; }
+    public override TextureSetsResource TextureSets { get; set; }
 
     [Export]
-    public int TextureDetail { get;set; } = 20;
+    public int TextureDetail { get; set; } = 20;
 
     [Export]
-    public bool UseAntiTile { get;set; } = true;
+    public bool UseAntiTile { get; set; } = true;
 
     [Export]
-    public bool NearestTextureFilter { get;set; } = false;
+    public bool NearestTextureFilter { get; set; } = false;
 
     [Export]
-    public float HeightBlendFactor { get;set; } = 10f;
+    public float HeightBlendFactor { get; set; } = 10f;
 
     [Export]
-    public AlphaChannelUsage AlbedoAlphaChannelUsage { get;set; } = AlphaChannelUsage.None;
+    public AlphaChannelUsage AlbedoAlphaChannelUsage { get; set; } = AlphaChannelUsage.None;
 
     [Export]
-    public AlphaChannelUsage NormalAlphaChannelUsage { get;set; } = AlphaChannelUsage.None;
+    public AlphaChannelUsage NormalAlphaChannelUsage { get; set; } = AlphaChannelUsage.None;
 
     [Export]
-    public bool UseSharpTransitions { get;set; } = false;
+    public bool UseSharpTransitions { get; set; } = false;
 
     [ExportGroup("Foliage")]
+    // Global toggle for all foliage visibility - provides quick show/hide for all foliage types at once
+    private bool _showFoliage = true;
     [Export]
-    public override FoliageResource[] Foliages { get;set; }
+    public bool ShowFoliage
+    {
+        get => _showFoliage;
+        set
+        {
+            if (_showFoliage != value)
+            {
+                _showFoliage = value;
+                // Update visibility in real-time when changed in the editor inspector
+                // CallDeferred ensures the update happens after property is fully set
+                if (Engine.IsEditorHint() && IsInsideTree())
+                {
+                    CallDeferred(MethodName.UpdateFoliagesVisibility);
+                }
+            }
+        }
+    }
+
+    // Custom property setter to trigger visibility updates when foliage array changes
+    private FoliageResource[] _foliages;
+    [Export]
+    public override FoliageResource[] Foliages
+    {
+        get => _foliages;
+        set
+        {
+            _foliages = value;
+            // Update visibility when foliage array is modified in the editor
+            if (Engine.IsEditorHint() && IsInsideTree())
+            {
+                CallDeferred(MethodName.UpdateFoliagesVisibility);
+            }
+        }
+    }
 
     [ExportGroup("Objects")]
+    // Global toggle for all objects visibility - provides quick show/hide for all object types at once
+    private bool _showObjects = true;
     [Export]
-    public int DefaultObjectFrequency { get;set; } = 10;
+    public bool ShowObjects
+    {
+        get => _showObjects;
+        set
+        {
+            if (_showObjects != value)
+            {
+                _showObjects = value;
+                // Update visibility in real-time when changed in the editor inspector
+                // CallDeferred ensures the update happens after property is fully set
+                if (Engine.IsEditorHint() && IsInsideTree())
+                {
+                    CallDeferred(MethodName.UpdateObjectsVisibility);
+                }
+            }
+        }
+    }
 
     [Export]
-    public ObjectLoadingStrategy ObjectLoadingStrategy { get;set; } = ObjectLoadingStrategy.ThreadedInEditorOnly;
+    public int DefaultObjectFrequency { get; set; } = 10;
 
     [Export]
-    public override ObjectResource[] Objects { get;set; }
+    public ObjectLoadingStrategy ObjectLoadingStrategy { get; set; } = ObjectLoadingStrategy.ThreadedInEditorOnly;
+
+    // Custom property setter to trigger visibility updates when objects array changes
+    private ObjectResource[] _objects;
+    [Export]
+    public override ObjectResource[] Objects
+    {
+        get => _objects;
+        set
+        {
+            _objects = value;
+            // Update visibility when objects array is modified in the editor
+            if (Engine.IsEditorHint() && IsInsideTree())
+            {
+                CallDeferred(MethodName.UpdateObjectsVisibility);
+            }
+        }
+    }
 
     [ExportGroup("Water")]
 
     [Export]
-    public override WaterResource WaterDefinition { get;set; }
+    public override WaterResource WaterDefinition { get; set; }
 
     [ExportGroup("Snow")]
 
     [Export]
-    public override SnowResource SnowDefinition { get;set; }
+    public override SnowResource SnowDefinition { get; set; }
 
     [ExportGroup("Meta")]
 
     [Export]
-    public bool ShowMetaInfo { get;set; } = true;
+    public bool ShowMetaInfo { get; set; } = true;
 
     [Export]
-    public override MetaInfoLayer[] MetaInfoLayers { get;set; }
+    public override MetaInfoLayer[] MetaInfoLayers { get; set; }
 
     [ExportGroup("Zones")]
     [Export]
-    public override ZonesResource TerrainZones { get;set; }
+    public override ZonesResource TerrainZones { get; set; }
 
-    public async override void _Ready() {
+    public async override void _Ready()
+    {
         base._Ready();
 
 #if TOOLS
-        if (Engine.IsEditorHint()) {
+        if (Engine.IsEditorHint())
+        {
             CompatibilityScript_0_4_Alpha.Convert(this);
         }
 #endif
 
         _defaultNoise = ResourceLoader.Load<Texture2D>("res://addons/terrabrush/Resources/DefaultNoise.tres");
 
-        if (string.IsNullOrEmpty(DataPath)) {
+        if (string.IsNullOrEmpty(DataPath))
+        {
             var scenePath = GetTree().EditedSceneRoot.SceneFilePath;
-            if (!string.IsNullOrWhiteSpace(scenePath)) {
+            if (!string.IsNullOrWhiteSpace(scenePath))
+            {
                 DataPath = scenePath.Replace(System.IO.Path.GetFileName(scenePath), GetTree().EditedSceneRoot.Name);
             }
         }
 
-        if (TerrainZones != null) {
+        if (TerrainZones != null)
+        {
             await LoadTerrain();
         }
     }
 
-    public override string[] _GetConfigurationWarnings() {
+    public override bool _Set(StringName property, Variant value)
+    {
+        // Detect property changes in the editor for real-time visibility updates
+        if (Engine.IsEditorHint())
+        {
+            var propertyStr = property.ToString();
+
+            if (propertyStr == "ShowObjects")
+            {
+                ShowObjects = value.As<bool>();
+                CallDeferred(MethodName.UpdateObjectsVisibility);
+                return true;
+            }
+            else if (propertyStr == "ShowFoliage")
+            {
+                ShowFoliage = value.As<bool>();
+                CallDeferred(MethodName.UpdateFoliagesVisibility);
+                return true;
+            }
+            else if (propertyStr == "Objects")
+            {
+                Objects = value.As<ObjectResource[]>();
+                CallDeferred(MethodName.UpdateObjectsVisibility);
+                return true;
+            }
+            else if (propertyStr == "Foliages")
+            {
+                Foliages = value.As<FoliageResource[]>();
+                CallDeferred(MethodName.UpdateFoliagesVisibility);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public override string[] _GetConfigurationWarnings()
+    {
         var warnings = new List<string>();
 
-        if (string.IsNullOrWhiteSpace(DataPath)) {
+        if (string.IsNullOrWhiteSpace(DataPath))
+        {
             warnings.Add($"{nameof(DataPath)} is required");
         }
 
-        if (Resolution != 1) {
-            if (!Utils.IsPowerOfTwo(Resolution)) {
+        if (Resolution != 1)
+        {
+            if (!Utils.IsPowerOfTwo(Resolution))
+            {
                 warnings.Add($"{nameof(Resolution)} must be a power of 2");
             }
 
-            if (!Utils.IsPowerOfTwo(ZonesSize - 1)) {
+            if (!Utils.IsPowerOfTwo(ZonesSize - 1))
+            {
                 warnings.Add($"{nameof(ZonesSize)} must be a (power of 2) + 1");
             }
 
-            if (LODInitialCellWidth != Resolution) {
+            if (LODInitialCellWidth != Resolution)
+            {
                 warnings.Add($"{nameof(LODInitialCellWidth)} should be equals to {nameof(Resolution)} for better result");
             }
         }
@@ -254,28 +401,35 @@ public partial class TerraBrush : TerraBrushTool {
         return warnings.ToArray();
     }
 
-    public override async void OnCreateTerrain() {
-        if (Resolution != 1) {
-            if (!Utils.IsPowerOfTwo(Resolution)) {
+    public override async void OnCreateTerrain()
+    {
+        if (Resolution != 1)
+        {
+            if (!Utils.IsPowerOfTwo(Resolution))
+            {
                 return;
             }
 
-            if (!Utils.IsPowerOfTwo(ZonesSize - 1)) {
+            if (!Utils.IsPowerOfTwo(ZonesSize - 1))
+            {
                 return;
             }
         }
 
-        if (string.IsNullOrWhiteSpace(DataPath)) {
+        if (string.IsNullOrWhiteSpace(DataPath))
+        {
             return;
         }
 
-        if (!string.IsNullOrWhiteSpace(DataPath) && !DirAccess.DirExistsAbsolute(DataPath)) {
+        if (!string.IsNullOrWhiteSpace(DataPath) && !DirAccess.DirExistsAbsolute(DataPath))
+        {
             DirAccess.MakeDirAbsolute(DataPath);
         }
 
         OnRemoveTerrain();
 
-        TerrainZones = new ZonesResource() {
+        TerrainZones = new ZonesResource()
+        {
             Zones = new ZoneResource[] {
                 new ZoneResource() {
                     HeightMapTexture = ZoneUtils.CreateHeightmapImage(ZonesSize, Resolution, new Vector2I(0, 0), DataPath)
@@ -288,27 +442,32 @@ public partial class TerraBrush : TerraBrushTool {
         TerrainSettingsUpdated?.Invoke();
     }
 
-    public override void OnRemoveTerrain() {
-        if (_terrain != null) {
+    public override void OnRemoveTerrain()
+    {
+        if (_terrain != null)
+        {
             _terrain.QueueFree();
             _terrain = null;
         }
 
-        if (_foliagesNode != null) {
+        if (_foliagesNode != null)
+        {
             _foliagesNode.QueueFree();
             _foliagesNode = null;
         }
 
         ClearObjects();
 
-        if (_waterNodeContainer != null) {
+        if (_waterNodeContainer != null)
+        {
             _waterNodeContainer.QueueFree();
             _waterNodeContainer = null;
 
             _waterNode = null;
         }
 
-        if (_snowNodeContainer != null) {
+        if (_snowNodeContainer != null)
+        {
             _snowNodeContainer.QueueFree();
             _snowNodeContainer = null;
 
@@ -318,15 +477,19 @@ public partial class TerraBrush : TerraBrushTool {
         TerrainZones = null;
     }
 
-    private async Task LoadTerrain() {
-        if (TerrainZones == null) {
+    private async Task LoadTerrain()
+    {
+        if (TerrainZones == null)
+        {
             return;
         }
 
-        for (var i = 0; i < TerrainZones.Zones?.Count(); i++) {
+        for (var i = 0; i < TerrainZones.Zones?.Count(); i++)
+        {
             var zone = TerrainZones.Zones[i];
 
-            if (zone.HeightMapTexture == null) {
+            if (zone.HeightMapTexture == null)
+            {
                 zone.HeightMapTexture = ZoneUtils.CreateHeightmapImage(ZonesSize, Resolution, zone.ZonePosition, DataPath);
             }
 
@@ -334,7 +497,8 @@ public partial class TerraBrush : TerraBrushTool {
         }
         TerrainZones.UpdateSplatmapsTextures();
 
-        if (Engine.IsEditorHint()) {
+        if (Engine.IsEditorHint())
+        {
             TerrainZones.UpdateLockTexture(ZonesSize);
         }
         TerrainZones.UpdateZonesMap();
@@ -342,7 +506,8 @@ public partial class TerraBrush : TerraBrushTool {
 
         await Utils.WaitForTextureReady(_defaultNoise);
 
-        if (Engine.IsEditorHint() || (!CollisionOnly && !DefaultSettings.CollisionOnly)) {
+        if (Engine.IsEditorHint() || (!CollisionOnly && !DefaultSettings.CollisionOnly))
+        {
             // Water needs to be created first so we have the reference to the image texture
             await CreateWater();
         }
@@ -378,7 +543,8 @@ public partial class TerraBrush : TerraBrushTool {
 
         await CreateObjects();
 
-        if (Engine.IsEditorHint() || (!CollisionOnly && !DefaultSettings.CollisionOnly)) {
+        if (Engine.IsEditorHint() || (!CollisionOnly && !DefaultSettings.CollisionOnly))
+        {
             await CreateFoliages();
             await CreateSnow();
         }
@@ -388,27 +554,32 @@ public partial class TerraBrush : TerraBrushTool {
         EmitSignal(StringNames.TerrainLoaded);
     }
 
-    public override async void OnUpdateTerrainSettings() {
-        if (_terrain != null) {
+    public override async void OnUpdateTerrainSettings()
+    {
+        if (_terrain != null)
+        {
             _terrain.QueueFree();
             _terrain = null;
         }
 
-        if (_foliagesNode != null) {
+        if (_foliagesNode != null)
+        {
             _foliagesNode.QueueFree();
             _foliagesNode = null;
         }
 
         ClearObjects();
 
-        if (_waterNodeContainer != null) {
+        if (_waterNodeContainer != null)
+        {
             _waterNodeContainer.QueueFree();
             _waterNodeContainer = null;
 
             _waterNode = null;
         }
 
-        if (_snowNodeContainer != null) {
+        if (_snowNodeContainer != null)
+        {
             _snowNodeContainer.QueueFree();
             _snowNodeContainer = null;
 
@@ -419,20 +590,25 @@ public partial class TerraBrush : TerraBrushTool {
         TerrainSettingsUpdated?.Invoke();
     }
 
-    public void ClearObjects() {
-        if (_objectsContainerNode != null) {
+    public void ClearObjects()
+    {
+        if (_objectsContainerNode != null)
+        {
             _objectsContainerNode.QueueFree();
             _objectsContainerNode = null;
         }
     }
 
-    public void CreateSplatmaps(ZoneResource zone) {
+    public void CreateSplatmaps(ZoneResource zone)
+    {
         var numberOfSplatmaps = Mathf.CeilToInt((TextureSets?.TextureSets?.Length ?? 0) / 4.0f);
 
-        if (zone.SplatmapsTexture == null || zone.SplatmapsTexture.Length < numberOfSplatmaps) {
+        if (zone.SplatmapsTexture == null || zone.SplatmapsTexture.Length < numberOfSplatmaps)
+        {
             var newList = new List<ImageTexture>(zone.SplatmapsTexture ?? Array.Empty<ImageTexture>());
 
-            for (var i = zone.SplatmapsTexture?.Length ?? 0; i < numberOfSplatmaps; i++) {
+            for (var i = zone.SplatmapsTexture?.Length ?? 0; i < numberOfSplatmaps; i++)
+            {
                 newList.Add(ZoneUtils.CreateSplatmapImage(ZonesSize, zone.ZonePosition, i, DataPath));
             }
 
@@ -440,29 +616,38 @@ public partial class TerraBrush : TerraBrushTool {
         }
     }
 
-    private async Task CreateFoliages() {
-        if (Foliages == null || Foliages.Length == 0) {
+    private async Task CreateFoliages()
+    {
+        if (Foliages == null || Foliages.Length == 0)
+        {
             return;
         }
 
         var prefab = await AsyncUtils.LoadResourceAsync<PackedScene>("res://addons/terrabrush/Components/Foliage.tscn", CancellationToken.None);
 
         _foliagesNode = GetNodeOrNull<Node3D>("Foliages");
-        if (_foliagesNode == null) {
+        if (_foliagesNode == null)
+        {
             _foliagesNode = new Node3D();
             AddChild(_foliagesNode);
         }
 
-        foreach (var existingFoliage in _foliagesNode.GetChildren()) {
+        foreach (var existingFoliage in _foliagesNode.GetChildren())
+        {
             existingFoliage.QueueFree();
         }
 
-        for (var zoneIndex = 0; zoneIndex < TerrainZones.Zones?.Count(); zoneIndex++) {
+        for (var zoneIndex = 0; zoneIndex < TerrainZones.Zones?.Count(); zoneIndex++)
+        {
             var zone = TerrainZones.Zones[zoneIndex];
-            var newList = Foliages.Select((foliage, foliageIndex) => {
-                if (zone.FoliagesTexture?.Length > foliageIndex) {
+            var newList = Foliages.Select((foliage, foliageIndex) =>
+            {
+                if (zone.FoliagesTexture?.Length > foliageIndex)
+                {
                     return zone.FoliagesTexture[foliageIndex];
-                } else {
+                }
+                else
+                {
                     return ZoneUtils.CreateFoliageImage(ZonesSize, zone.ZonePosition, foliageIndex, DataPath);
                 }
             });
@@ -473,10 +658,12 @@ public partial class TerraBrush : TerraBrushTool {
         TerrainZones.InitializeFoliageTextures(this);
         TerrainZones.UpdateFoliagesTextures();
 
-        for (var i = 0; i < Foliages.Count(); i++) {
+        for (var i = 0; i < Foliages.Count(); i++)
+        {
             var foliage = Foliages[i];
 
-            if (foliage.Definition != null) {
+            if (foliage.Definition != null)
+            {
                 var newFoliage = prefab.Instantiate<Foliage>();
 
                 newFoliage.FoliageIndex = i;
@@ -489,28 +676,41 @@ public partial class TerraBrush : TerraBrushTool {
                 newFoliage.Definition = foliage.Definition;
 
                 _foliagesNode.AddChild(newFoliage);
+
+                // Apply visibility settings: combines global ShowFoliage toggle AND per-item Visible property
+                // This allows both quick global hide/show and fine-grained per-type control
+                // Foliage is only visible when BOTH conditions are true
+                newFoliage.Visible = ShowFoliage && foliage.Visible;
             }
         }
     }
 
-    public async Task CreateObjects() {
-        if (Objects == null || Objects.Length == 0) {
+    public async Task CreateObjects()
+    {
+        if (Objects == null || Objects.Length == 0)
+        {
             return;
         }
 
         _objectsContainerNode = GetNodeOrNull<Node3D>("Objects");
-        if (_objectsContainerNode == null) {
+        if (_objectsContainerNode == null)
+        {
             _objectsContainerNode = new Node3D();
             AddChild(_objectsContainerNode);
         }
 
-        for (var zoneIndex = 0; zoneIndex < TerrainZones.Zones?.Length; zoneIndex++) {
+        for (var zoneIndex = 0; zoneIndex < TerrainZones.Zones?.Length; zoneIndex++)
+        {
             var zone = TerrainZones.Zones[zoneIndex];
-            var newList = Objects.Select((objectItem, objectIndex) => {
-                if (zone.ObjectsTexture?.Length > objectIndex) {
+            var newList = Objects.Select((objectItem, objectIndex) =>
+            {
+                if (zone.ObjectsTexture?.Length > objectIndex)
+                {
                     return zone.ObjectsTexture[objectIndex];
-                } else {
-                    return  ZoneUtils.CreateObjectImage(ZonesSize, zone.ZonePosition, objectIndex, DataPath);
+                }
+                else
+                {
+                    return ZoneUtils.CreateObjectImage(ZonesSize, zone.ZonePosition, objectIndex, DataPath);
                 }
             });
 
@@ -518,20 +718,23 @@ public partial class TerraBrush : TerraBrushTool {
         }
 
         var loadInThread = ObjectLoadingStrategy == ObjectLoadingStrategy.Threaded || (ObjectLoadingStrategy == ObjectLoadingStrategy.ThreadedInEditorOnly && Engine.IsEditorHint());
-        for (var objectIndex = 0; objectIndex < Objects.Length; objectIndex++) {
+        for (var objectIndex = 0; objectIndex < Objects.Length; objectIndex++)
+        {
             var objectItem = Objects[objectIndex];
-            if (objectItem.Hide) {
+            if (objectItem.Hide)
+            {
                 continue;
             }
 
-            var prefab = objectItem.Definition.Strategy switch {
+            var prefab = objectItem.Definition.Strategy switch
+            {
                 ObjectStrategy.OctreeMultiMeshes => await AsyncUtils.LoadResourceAsync<PackedScene>("res://addons/terrabrush/Components/ObjectsOctreeMultiMesh.tscn", CancellationToken.None),
                 ObjectStrategy.PackedScenes => await AsyncUtils.LoadResourceAsync<PackedScene>("res://addons/terrabrush/Components/Objects.tscn", CancellationToken.None),
                 _ => throw new NotImplementedException()
             };
 
             var objectNode = prefab.Instantiate<IObjectsNode>();
-            ((Node3D) objectNode).Name = $"{objectIndex}";
+            ((Node3D)objectNode).Name = $"{objectIndex}";
 
             objectNode.ObjectsIndex = objectIndex;
             objectNode.Definition = objectItem.Definition;
@@ -542,18 +745,26 @@ public partial class TerraBrush : TerraBrushTool {
             objectNode.LoadInThread = loadInThread;
             objectNode.DefaultObjectFrequency = DefaultObjectFrequency;
 
-            _objectsContainerNode.AddChild((Node3D) objectNode);
+            _objectsContainerNode.AddChild((Node3D)objectNode);
+
+            // Apply visibility settings: combines global ShowObjects toggle AND per-item Visible property
+            // This allows both quick global hide/show and fine-grained per-type control
+            // Object is only visible when BOTH conditions are true
+            ((Node3D)objectNode).Visible = ShowObjects && objectItem.Visible;
         }
 
         TerrainZones.UpdateObjectsTextures();
     }
 
-    private async Task CreateWater() {
-        if (WaterDefinition == null) {
+    private async Task CreateWater()
+    {
+        if (WaterDefinition == null)
+        {
             return;
         }
 
-        for (var i = 0; i < TerrainZones.Zones?.Count(); i++) {
+        for (var i = 0; i < TerrainZones.Zones?.Count(); i++)
+        {
             var zone = TerrainZones.Zones[i];
 
             zone.WaterTexture ??= ZoneUtils.CreateWaterImage(ZonesSize, Resolution, zone.ZonePosition, DataPath);
@@ -562,7 +773,8 @@ public partial class TerraBrush : TerraBrushTool {
         TerrainZones.UpdateWaterTextures();
 
         _waterNodeContainer = GetNodeOrNull<Node3D>("Water");
-        if (_waterNodeContainer == null) {
+        if (_waterNodeContainer == null)
+        {
             _waterNodeContainer = new Node3D();
             AddChild(_waterNodeContainer);
 
@@ -605,19 +817,23 @@ public partial class TerraBrush : TerraBrushTool {
         }
     }
 
-    private async Task CreateSnow() {
-        if (SnowDefinition == null) {
+    private async Task CreateSnow()
+    {
+        if (SnowDefinition == null)
+        {
             return;
         }
 
-        for (var i = 0; i < TerrainZones.Zones?.Length; i++) {
+        for (var i = 0; i < TerrainZones.Zones?.Length; i++)
+        {
             var zone = TerrainZones.Zones[i];
 
             zone.SnowTexture ??= ZoneUtils.CreateSnowImage(ZonesSize, Resolution, zone.ZonePosition, DataPath);
         }
 
         _snowNodeContainer = GetNodeOrNull<Node3D>("Snow");
-        if (_snowNodeContainer == null) {
+        if (_snowNodeContainer == null)
+        {
             _snowNodeContainer = new Node3D();
             AddChild(_snowNodeContainer);
         }
@@ -635,19 +851,23 @@ public partial class TerraBrush : TerraBrushTool {
         _snowNode.LODRowsPerLevel = LODRowsPerLevel;
         _snowNode.LODInitialCellWidth = LODInitialCellWidth;
 
-        if (SnowDefinition.Noise != null) {
+        if (SnowDefinition.Noise != null)
+        {
             await Utils.WaitForTextureReady(SnowDefinition.Noise);
         }
 
         _snowNodeContainer.AddChild(_snowNode);
     }
 
-    private void CreateMetaInfo() {
-        if (MetaInfoLayers == null || MetaInfoLayers.Length <= 0) {
+    private void CreateMetaInfo()
+    {
+        if (MetaInfoLayers == null || MetaInfoLayers.Length <= 0)
+        {
             return;
         }
 
-        for (var i = 0; i < TerrainZones.Zones?.Length; i++) {
+        for (var i = 0; i < TerrainZones.Zones?.Length; i++)
+        {
             var zone = TerrainZones.Zones[i];
 
             zone.MetaInfoTexture ??= ZoneUtils.CreateMetaInfoImage(ZonesSize, Resolution, zone.ZonePosition, DataPath);
@@ -656,39 +876,49 @@ public partial class TerraBrush : TerraBrushTool {
         TerrainZones.UpdateMetaInfoTextures();
     }
 
-    public void UpdateObjectsHeight(List<ZoneResource> zones) {
-        for (var i = 0; i < Objects?.Length; i++) {
+    public void UpdateObjectsHeight(List<ZoneResource> zones)
+    {
+        for (var i = 0; i < Objects?.Length; i++)
+        {
             var objectItem = Objects[i];
-            if (!objectItem.Hide) {
+            if (!objectItem.Hide)
+            {
                 var objectsNode = _objectsContainerNode.GetNode<IObjectsNode>($"{i}");
                 objectsNode.UpdateObjectsHeight(zones);
             }
         }
     }
 
-    public void UpdateCameraPosition(Camera3D viewportCamera) {
+    public void UpdateCameraPosition(Camera3D viewportCamera)
+    {
         _terrain?.Clipmap.UpdateEditorCameraPosition(viewportCamera);
         _waterNode?.Clipmap.UpdateEditorCameraPosition(viewportCamera);
         _snowNode?.Clipmap.UpdateEditorCameraPosition(viewportCamera);
 
-        if (_foliagesNode != null) {
-            foreach (var foliageNode in _foliagesNode.GetChildren()) {
-                ((Foliage) foliageNode).UpdateEditorCameraPosition(viewportCamera);
+        if (_foliagesNode != null)
+        {
+            foreach (var foliageNode in _foliagesNode.GetChildren())
+            {
+                ((Foliage)foliageNode).UpdateEditorCameraPosition(viewportCamera);
             }
         }
     }
 
-    public void SaveResources() {
-        if (!string.IsNullOrWhiteSpace(DataPath)) {
+    public void SaveResources()
+    {
+        if (!string.IsNullOrWhiteSpace(DataPath))
+        {
             TerrainZones?.SaveResources();
         }
     }
 
-    public void AddInteractionPoint(float x, float y) {
+    public void AddInteractionPoint(float x, float y)
+    {
         x += ZonesSize / 2;
         y += ZonesSize / 2;
 
-        if (ZonesSize % 2 == 0) {
+        if (ZonesSize % 2 == 0)
+        {
             x -= LODInitialCellWidth / 2.0f;
             y -= LODInitialCellWidth / 2.0f;
         }
@@ -697,11 +927,13 @@ public partial class TerraBrush : TerraBrushTool {
         _waterNode?.AddRippleEffect(x, y);
     }
 
-    public TerrainPositionInformation GetPositionInformation(float x, float y) {
+    public TerrainPositionInformation GetPositionInformation(float x, float y)
+    {
         x += ZonesSize / 2;
         y += ZonesSize / 2;
 
-        if (ZonesSize % 2 == 0) {
+        if (ZonesSize % 2 == 0)
+        {
             x -= LODInitialCellWidth / 2.0f;
             y -= LODInitialCellWidth / 2.0f;
         }
@@ -709,38 +941,46 @@ public partial class TerraBrush : TerraBrushTool {
         var zoneInfo = ZoneUtils.GetPixelToZoneInfo(x, y, ZonesSize, Resolution);
         var zone = TerrainZones.GetZoneForZoneInfo(zoneInfo);
 
-        if (zone != null) {
+        if (zone != null)
+        {
             float? waterFactor = null;
             float? snowFactor = null;
             int? metaInfoIndex = null;
             string metaInfoName = null;
 
-            if (zone.WaterTexture != null) {
+            if (zone.WaterTexture != null)
+            {
                 waterFactor = GetImageFromImageTexture(zone.WaterTexture).GetPixel(zoneInfo.ImagePosition.X, zoneInfo.ImagePosition.Y).R;
             }
 
-            if (zone.SnowTexture != null) {
+            if (zone.SnowTexture != null)
+            {
                 snowFactor = GetImageFromImageTexture(zone.SnowTexture).GetPixel(zoneInfo.ImagePosition.X, zoneInfo.ImagePosition.Y).R;
             }
 
-            if (MetaInfoLayers?.Length > 0 && zone.MetaInfoTexture != null) {
+            if (MetaInfoLayers?.Length > 0 && zone.MetaInfoTexture != null)
+            {
                 var metaInfoColor = GetImageFromImageTexture(zone.MetaInfoTexture).GetPixel(zoneInfo.ImagePosition.X, zoneInfo.ImagePosition.Y);
-                var metaInfoColorIndex = (int) metaInfoColor.R;
+                var metaInfoColorIndex = (int)metaInfoColor.R;
 
-                if (metaInfoColorIndex >= 0 && MetaInfoLayers.Length - 1 >= metaInfoColorIndex) {
+                if (metaInfoColorIndex >= 0 && MetaInfoLayers.Length - 1 >= metaInfoColorIndex)
+                {
                     metaInfoIndex = metaInfoColorIndex;
                     metaInfoName = MetaInfoLayers[metaInfoColorIndex].Name;
                 }
             }
 
-            return new TerrainPositionInformation() {
-                Textures = zone.SplatmapsTexture?.Length > 0 ? TextureSets?.TextureSets?.Select((textureSet, index) => {
+            return new TerrainPositionInformation()
+            {
+                Textures = zone.SplatmapsTexture?.Length > 0 ? TextureSets?.TextureSets?.Select((textureSet, index) =>
+                {
                     var splatmapIndex = Mathf.FloorToInt(index / 4);
                     var splatmapImage = zone.SplatmapsTexture[splatmapIndex];
                     var pixel = GetImageFromImageTexture(splatmapImage).GetPixel(zoneInfo.ImagePosition.X, zoneInfo.ImagePosition.Y);
                     var colorIndex = index % 4;
 
-                    return new TerrainPositionTextureInformation() {
+                    return new TerrainPositionTextureInformation()
+                    {
                         Index = index,
                         Name = textureSet.Name,
                         Factor = pixel[colorIndex]
@@ -758,10 +998,12 @@ public partial class TerraBrush : TerraBrushTool {
         return null;
     }
 
-    private Image GetImageFromImageTexture(ImageTexture texture) {
+    private Image GetImageFromImageTexture(ImageTexture texture)
+    {
         _imageTexturesCache.TryGetValue(texture, out var image);
 
-        if (image == null) {
+        if (image == null)
+        {
             image = texture.GetImage();
             _imageTexturesCache.Add(texture, image);
         }
@@ -769,9 +1011,12 @@ public partial class TerraBrush : TerraBrushTool {
         return image;
     }
 
-    public override void OnLockTerrain() {
-        if (TerrainZones?.Zones != null) {
-            foreach (var zone in TerrainZones.Zones) {
+    public override void OnLockTerrain()
+    {
+        if (TerrainZones?.Zones != null)
+        {
+            foreach (var zone in TerrainZones.Zones)
+            {
                 zone.LockTexture = ZoneUtils.CreateLockImage(ZonesSize, zone.ZonePosition, true);
             }
 
@@ -779,13 +1024,98 @@ public partial class TerraBrush : TerraBrushTool {
         }
     }
 
-    public override void OnUnlockTerrain() {
-        if (TerrainZones?.Zones != null) {
-            foreach (var zone in TerrainZones.Zones) {
+    public override void OnUnlockTerrain()
+    {
+        if (TerrainZones?.Zones != null)
+        {
+            foreach (var zone in TerrainZones.Zones)
+            {
                 zone.LockTexture = null;
             }
 
             TerrainZones.UpdateLockTexture(ZonesSize);
+        }
+    }
+
+    /// <summary>
+    /// Sets the visibility of a specific object type at runtime
+    /// </summary>
+    /// <param name="objectIndex">The index of the object in the Objects array</param>
+    /// <param name="visible">Whether the object should be visible</param>
+    public void SetObjectVisible(int objectIndex, bool visible)
+    {
+        if (_objectsContainerNode != null && objectIndex >= 0 && objectIndex < _objectsContainerNode.GetChildCount())
+        {
+            var objectNode = _objectsContainerNode.GetChild(objectIndex) as Node3D;
+            if (objectNode != null)
+            {
+                objectNode.Visible = visible;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sets the visibility of a specific foliage type at runtime
+    /// </summary>
+    /// <param name="foliageIndex">The index of the foliage in the Foliages array</param>
+    /// <param name="visible">Whether the foliage should be visible</param>
+    public void SetFoliageVisible(int foliageIndex, bool visible)
+    {
+        if (_foliagesNode != null && foliageIndex >= 0 && foliageIndex < _foliagesNode.GetChildCount())
+        {
+            var foliageNode = _foliagesNode.GetChild(foliageIndex) as Foliage;
+            if (foliageNode != null)
+            {
+                foliageNode.Visible = visible;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Updates the visibility of all objects based on the global ShowObjects flag and individual Visible flags.
+    /// Called automatically when ShowObjects or Objects array changes in the editor.
+    /// Can also be called manually to refresh visibility state.
+    /// </summary>
+    public void UpdateObjectsVisibility()
+    {
+        // Early exit if nodes or data aren't initialized yet
+        if (_objectsContainerNode == null || Objects == null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < Mathf.Min(Objects.Length, _objectsContainerNode.GetChildCount()); i++)
+        {
+            var objectNode = _objectsContainerNode.GetChild(i) as Node3D;
+            if (objectNode != null && Objects[i] != null)
+            {
+                // Apply AND logic: visible only if both global AND per-item flags are true
+                objectNode.Visible = ShowObjects && Objects[i].Visible;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Updates the visibility of all foliage based on the global ShowFoliage flag and individual Visible flags.
+    /// Called automatically when ShowFoliage or Foliages array changes in the editor.
+    /// Can also be called manually to refresh visibility state.
+    /// </summary>
+    public void UpdateFoliagesVisibility()
+    {
+        // Early exit if nodes or data aren't initialized yet
+        if (_foliagesNode == null || Foliages == null)
+        {
+            return;
+        }
+
+        for (var i = 0; i < Mathf.Min(Foliages.Length, _foliagesNode.GetChildCount()); i++)
+        {
+            var foliageNode = _foliagesNode.GetChild(i) as Foliage;
+            if (foliageNode != null && Foliages[i] != null)
+            {
+                // Apply AND logic: visible only if both global AND per-item flags are true
+                foliageNode.Visible = ShowFoliage && Foliages[i].Visible;
+            }
         }
     }
 }

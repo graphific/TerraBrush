@@ -5,27 +5,33 @@ using Godot;
 
 namespace TerraBrush;
 
-public static class Utils {
-    public static float GetNextFloatWithSeed(int seed, float minValue, float maxValue) {
+public static class Utils
+{
+    public static float GetNextFloatWithSeed(int seed, float minValue, float maxValue)
+    {
         var randomGenerator = new Godot.RandomNumberGenerator();
         randomGenerator.Seed = (ulong)seed;
 
         return randomGenerator.RandfRange(minValue, maxValue);
     }
 
-    public static int GetNextIntWithSeed(int seed, int minValue, int maxValue) {
+    public static int GetNextIntWithSeed(int seed, int minValue, int maxValue)
+    {
         var randomGenerator = new Godot.RandomNumberGenerator();
         randomGenerator.Seed = (ulong)seed;
 
         return randomGenerator.RandiRange(minValue, maxValue);
     }
 
-    public static string PathCombineForwardSlash(string directory, string path) {
-        if (!directory.EndsWith("/")) {
+    public static string PathCombineForwardSlash(string directory, string path)
+    {
+        if (!directory.EndsWith("/"))
+        {
             directory += "/";
         }
 
-        if (path.StartsWith("/")) {
+        if (path.StartsWith("/"))
+        {
             path = path.Substring(0, 1);
         }
 
@@ -34,23 +40,61 @@ public static class Utils {
         return directory;
     }
 
-    public static Texture2DArray TexturesToTextureArray(IEnumerable<Texture2D> textures) {
+    public static Texture2DArray TexturesToTextureArray(IEnumerable<Texture2D> textures)
+    {
         var textureArray = new Texture2DArray();
         var textureImageArray = new Godot.Collections.Array<Image>();
 
         int width = 0;
         int height = 0;
+        Image.Format targetFormat = Image.Format.Rgba8;
+        bool firstImage = true;
 
-        if (textures != null) {
-            textures.ToList().ForEach(texture => {
-                if (texture != null) {
+        if (textures != null)
+        {
+            textures.ToList().ForEach(texture =>
+            {
+                if (texture != null)
+                {
                     var textureImage = texture.GetImage();
 
-                    if (width == 0) {
+                    // Godot 4.x compatibility fix: Skip null or empty images
+                    // Prevents "Invalid image: image is empty" errors
+                    if (textureImage == null || textureImage.IsEmpty())
+                    {
+                        return;
+                    }
+
+                    // Godot 4.x compatibility fix: Skip images with invalid dimensions
+                    // Prevents errors when textures fail to load properly
+                    if (textureImage.GetWidth() <= 0 || textureImage.GetHeight() <= 0)
+                    {
+                        return;
+                    }
+
+                    if (firstImage)
+                    {
+                        // Store dimensions and format from first valid image as the standard
                         width = textureImage.GetWidth();
                         height = textureImage.GetHeight();
-                    } else if (textureImage.GetWidth() != width || textureImage.GetHeight() != height) {
-                        textureImage.Resize(width, height);
+                        targetFormat = textureImage.GetFormat();
+                        firstImage = false;
+                    }
+                    else
+                    {
+                        // Godot 4.x compatibility fix: Ensure all images have matching dimensions
+                        // Resize if dimensions don't match the first image
+                        if (textureImage.GetWidth() != width || textureImage.GetHeight() != height)
+                        {
+                            textureImage.Resize(width, height);
+                        }
+
+                        // Godot 4.x compatibility fix: Ensure all images have the same pixel format
+                        // Convert format if it doesn't match to prevent "All images must share the same format" error
+                        if (textureImage.GetFormat() != targetFormat)
+                        {
+                            textureImage.Convert(targetFormat);
+                        }
                     }
 
                     textureImageArray.Add(textureImage);
@@ -63,12 +107,15 @@ public static class Utils {
         return textureArray;
     }
 
-    public static ShaderMaterial CreateCustomShaderCopy(ShaderMaterial customShader) {
-        var newShader = new ShaderMaterial {
+    public static ShaderMaterial CreateCustomShaderCopy(ShaderMaterial customShader)
+    {
+        var newShader = new ShaderMaterial
+        {
             Shader = customShader.Shader
         };
 
-        foreach (Godot.Collections.Dictionary uniform in customShader.Shader.GetShaderUniformList()) {
+        foreach (Godot.Collections.Dictionary uniform in customShader.Shader.GetShaderUniformList())
+        {
             var uniformName = (string)uniform.GetValueOrDefault("name");
             newShader.SetShaderParameter(uniformName, customShader.GetShaderParameter(uniformName));
         }
@@ -76,27 +123,34 @@ public static class Utils {
         return newShader;
     }
 
-    public static Task<Texture2D> WaitForTextureReady(Texture2D texture) {
+    public static Task<Texture2D> WaitForTextureReady(Texture2D texture)
+    {
         var asyncEvent = new TaskCompletionSource<Texture2D>();
-        if (texture is NoiseTexture2D noiseTexture && noiseTexture.GetImage() == null) {
-            void afterChanged() {
+        if (texture is NoiseTexture2D noiseTexture && noiseTexture.GetImage() == null)
+        {
+            void afterChanged()
+            {
                 asyncEvent.SetResult(texture);
                 noiseTexture.Changed -= afterChanged;
             }
 
             noiseTexture.Changed += afterChanged;
-        } else {
+        }
+        else
+        {
             asyncEvent.SetResult(texture);
         }
 
         return asyncEvent.Task;
     }
 
-    public static bool IsPowerOfTwo(int x) {
+    public static bool IsPowerOfTwo(int x)
+    {
         return (x != 0) && ((x & (x - 1)) == 0);
     }
 
-    public static Color GetPixelLinear(Image image, float x, float y) {
+    public static Color GetPixelLinear(Image image, float x, float y)
+    {
         int x0 = Mathf.Max(0, Mathf.FloorToInt(x));
         int x1 = Mathf.Min(x0 + 1, image.GetWidth() - 1);
         int y0 = Mathf.Max(0, Mathf.FloorToInt(y));

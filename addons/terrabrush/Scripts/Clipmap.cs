@@ -6,80 +6,107 @@ using Godot;
 namespace TerraBrush;
 
 [Tool]
-public partial class Clipmap : Node3D {
+public partial class Clipmap : Node3D
+{
     private ShaderMaterial _clipmapShader;
 
     [NodePath] private MeshInstance3D _clipmapMesh;
 
-    [Export] public int ZonesSize { get;set; }
-    [Export] public int Resolution { get;set; }
-    [Export] public ZonesResource TerrainZones { get;set; }
-    [Export] public int Levels { get;set; } = 8;
-    [Export] public int RowsPerLevel { get;set; } = 21;
-    [Export] public float InitialCellWidth { get;set; } = 1;
-    [Export] public ShaderMaterial Shader { get;set; }
+    [Export] public int ZonesSize { get; set; }
+    [Export] public int Resolution { get; set; }
+    [Export] public ZonesResource TerrainZones { get; set; }
+    [Export] public int Levels { get; set; } = 8;
+    [Export] public int RowsPerLevel { get; set; } = 21;
+    [Export] public float InitialCellWidth { get; set; } = 1;
+    [Export] public ShaderMaterial Shader { get; set; }
 
     public MeshInstance3D ClipmapMesh => _clipmapMesh;
 
-    public override void _Ready() {
+    public override void _Ready()
+    {
         base._Ready();
         this.RegisterNodePaths();
 
         SetNotifyTransform(true);
     }
 
-    public override void _Process(double delta) {
-        if (!Engine.IsEditorHint()) {
+    public override void _Process(double delta)
+    {
+        if (!Engine.IsEditorHint())
+        {
             var cameraPosition = this.GetViewport()?.GetCamera3D()?.GlobalPosition ?? Vector3.Zero;
             UpdateClipmapMeshPosition(cameraPosition);
         }
     }
 
-    public override void _Notification(int what) {
+    public override void _Notification(int what)
+    {
         base._Notification(what);
 
-        if (what == NotificationTransformChanged) {
+        if (what == NotificationTransformChanged)
+        {
             UpdateShaderOffsetPosition();
         }
     }
 
-    public void UpdateEditorCameraPosition(Camera3D viewportCamera) {
+    public void UpdateEditorCameraPosition(Camera3D viewportCamera)
+    {
         UpdateClipmapMeshPosition(viewportCamera.GlobalPosition);
     }
 
-    private void UpdateClipmapMeshPosition(Vector3 position) {
+    private void UpdateClipmapMeshPosition(Vector3 position)
+    {
         var offset = 0.0f;
         var isEven = ZonesSize % 2 == 0;
-        if (isEven) {
+        if (isEven)
+        {
             offset = InitialCellWidth / 2.0f;
         }
 
-        var xPosition = ((int) Math.Floor(position.X)) + offset;
-        var zPosition = ((int) Math.Floor(position.Z)) + offset;
+        var xPosition = ((int)Math.Floor(position.X)) + offset;
+        var zPosition = ((int)Math.Floor(position.Z)) + offset;
 
         var maxCellWidth = InitialCellWidth * Mathf.Pow(2, Levels - 1);
 
         xPosition -= xPosition % maxCellWidth;
         zPosition -= zPosition % maxCellWidth;
 
-        if (isEven) {
+        if (isEven)
+        {
             xPosition -= InitialCellWidth / 2.0f;
             zPosition -= InitialCellWidth / 2.0f;
         }
 
         var newPosition = new Vector3(xPosition, GlobalPosition.Y, zPosition);
-        if (newPosition.DistanceTo(_clipmapMesh.GlobalPosition) > maxCellWidth) {
+        if (newPosition.DistanceTo(_clipmapMesh.GlobalPosition) > maxCellWidth)
+        {
             _clipmapMesh.GlobalPosition = newPosition;
         }
     }
 
-    public void ClearMesh() {
+    public void ClearMesh()
+    {
         _clipmapMesh.Mesh = null;
     }
 
-    public void CreateMesh() {
+    public void CreateMesh()
+    {
+        // Godot 4.x compatibility fix: Validate terrain data exists before creating mesh
+        // Prevents NullReferenceException when terrain initializes before zones are loaded
+        if (TerrainZones == null || TerrainZones.Zones == null || TerrainZones.Zones.Length == 0)
+        {
+            return;
+        }
+
+        // Ensure the clipmap mesh instance is ready
+        if (_clipmapMesh == null)
+        {
+            return;
+        }
+
         var clipmapShader = Shader;
-        if (clipmapShader == null) {
+        if (clipmapShader == null)
+        {
             clipmapShader = ResourceLoader.Load<ShaderMaterial>("res://addons/terrabrush/Resources/Shaders/clipmap_shader.gdshader");
         }
         _clipmapShader = clipmapShader;
@@ -90,25 +117,27 @@ public partial class Clipmap : Node3D {
         var colors = new List<Color>(); // To store information about the zones
 
         var rowsPerLevel = RowsPerLevel;
-        if (rowsPerLevel % 2 == 0) { // The number of rows per level cannot be even
+        if (rowsPerLevel % 2 == 0)
+        { // The number of rows per level cannot be even
             rowsPerLevel += 1;
         }
 
-        for (var i = 0; i < Levels; i++) {
+        for (var i = 0; i < Levels; i++)
+        {
             GenerateLevel(vertices, uvs, colors, i + 1, rowsPerLevel, InitialCellWidth);
         }
 
         var arrays = new Godot.Collections.Array();
-        arrays.Resize((int) Mesh.ArrayType.Max);
-        arrays[(int) Mesh.ArrayType.Vertex] = vertices.ToArray();
-        arrays[(int) Mesh.ArrayType.TexUV] = uvs.ToArray();
-        arrays[(int) Mesh.ArrayType.Color] = colors.ToArray();
+        arrays.Resize((int)Mesh.ArrayType.Max);
+        arrays[(int)Mesh.ArrayType.Vertex] = vertices.ToArray();
+        arrays[(int)Mesh.ArrayType.TexUV] = uvs.ToArray();
+        arrays[(int)Mesh.ArrayType.Color] = colors.ToArray();
 
         var normals = new Vector3[vertices.Count];
         Array.Fill(normals, new Vector3(0, 1, 0));
-        arrays[(int) Mesh.ArrayType.Normal] = normals;
+        arrays[(int)Mesh.ArrayType.Normal] = normals;
 
-        arrays[(int) Mesh.ArrayType.Tangent] = CalculateTangents(vertices, uvs).ToArray();
+        arrays[(int)Mesh.ArrayType.Tangent] = CalculateTangents(vertices, uvs).ToArray();
 
         var arrayMesh = new ArrayMesh();
         arrayMesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
@@ -118,21 +147,23 @@ public partial class Clipmap : Node3D {
 
         clipmapShader.SetShaderParameter(StringNames.HeightmapTextures, TerrainZones.HeightmapTextures);
         clipmapShader.SetShaderParameter(StringNames.InitialCellWidth, InitialCellWidth);
-        clipmapShader.SetShaderParameter(StringNames.ZonesSize, (float) ZonesSize);
-        clipmapShader.SetShaderParameter(StringNames.Resolution, (float) Resolution);
-        clipmapShader.SetShaderParameter(StringNames.NumberOfZones, (float) TerrainZones.Zones.Length);
-		clipmapShader.SetShaderParameter(StringNames.ZonesMap, TerrainZones.ZonesMap);
+        clipmapShader.SetShaderParameter(StringNames.ZonesSize, (float)ZonesSize);
+        clipmapShader.SetShaderParameter(StringNames.Resolution, (float)Resolution);
+        clipmapShader.SetShaderParameter(StringNames.NumberOfZones, (float)TerrainZones.Zones.Length);
+        clipmapShader.SetShaderParameter(StringNames.ZonesMap, TerrainZones.ZonesMap);
         UpdateShaderOffsetPosition();
     }
 
-    private void GenerateLevel(List<Vector3> vertices, List<Vector2> uvs, List<Color> colors, int level, int rowsPerLevel, float initialCellWidth) {
-        var width = initialCellWidth * ((float) Math.Pow(2, level - 1));
+    private void GenerateLevel(List<Vector3> vertices, List<Vector2> uvs, List<Color> colors, int level, int rowsPerLevel, float initialCellWidth)
+    {
+        var width = initialCellWidth * ((float)Math.Pow(2, level - 1));
 
         var startIndex = -1 - rowsPerLevel;
         var toIndex = 0 + rowsPerLevel;
 
         // The first level is different from the others because it has multiple group of 4 cells
-        if (level == 1) {
+        if (level == 1)
+        {
             startIndex -= 2;
             toIndex += 2;
         }
@@ -140,20 +171,24 @@ public partial class Clipmap : Node3D {
         // Because the second level is next to the first one which is a strange one, we need to adjust the offset
         var lowerOffsetIndex = 1;
         var upperOffsetIndex = 1;
-        if (level == 2) {
+        if (level == 2)
+        {
             lowerOffsetIndex = 3;
             upperOffsetIndex = -1;
         }
 
-        for (var x = startIndex; x <= toIndex; x++) {
-            for (var z = startIndex; z <= toIndex; z++) {
+        for (var x = startIndex; x <= toIndex; x++)
+        {
+            for (var z = startIndex; z <= toIndex; z++)
+            {
                 if (
                     level == 1 ||
                     (x >= startIndex && x < -((rowsPerLevel + lowerOffsetIndex) / 2)) ||
                     (x > ((rowsPerLevel - upperOffsetIndex) / 2) && x <= toIndex) ||
                     (z >= startIndex && z < -((rowsPerLevel + lowerOffsetIndex) / 2)) ||
                     (z > ((rowsPerLevel - upperOffsetIndex) / 2) && z <= toIndex)
-                ) {
+                )
+                {
                     AddSquareVertices(vertices, uvs, x * width, z * width, width);
 
                     var vertex0MidZone = (x == startIndex && z % 2 != 0) || (z == startIndex && x % 2 != 0);
@@ -164,7 +199,7 @@ public partial class Clipmap : Node3D {
                     var vertex4MidZone = (x == toIndex && z % 2 == 0) || (z == toIndex && x % 2 == 0);
                     var vertex5MidZone = (x == startIndex && z % 2 == 0) || (z == toIndex && x % 2 != 0);
 
-                    colors.AddRange(new [] {
+                    colors.AddRange(new[] {
                         new Color(vertex0MidZone ? 1 : 0, vertex0MidZone && z == startIndex ? 1 : 0, vertex0MidZone && x == startIndex ? 1 : 0, level / 100.0f),
                         new Color(vertex1MidZone ? 1 : 0, vertex1MidZone && z == startIndex ? 1 : 0, vertex1MidZone && x == toIndex ? 1 : 0, level / 100.0f),
                         new Color(vertex2MidZone ? 1 : 0, vertex2MidZone && z == toIndex ? 1 : 0, vertex2MidZone && x == startIndex ? 1 : 0, level / 100.0f),
@@ -178,7 +213,8 @@ public partial class Clipmap : Node3D {
         }
     }
 
-    private void AddSquareVertices(List<Vector3> vertices, List<Vector2> uvs, float xPosition, float zPosition, float width) {
+    private void AddSquareVertices(List<Vector3> vertices, List<Vector2> uvs, float xPosition, float zPosition, float width)
+    {
         /* Square made of 2 triangles
             2  #  #  #
             |  \  #  #
@@ -191,7 +227,7 @@ public partial class Clipmap : Node3D {
             #  #  #  3
         */
 
-        vertices.AddRange(new [] {
+        vertices.AddRange(new[] {
             new Vector3(xPosition, 0, zPosition),
             new Vector3(xPosition + width, 0, zPosition),
             new Vector3(xPosition, 0, zPosition + width),
@@ -201,7 +237,7 @@ public partial class Clipmap : Node3D {
             new Vector3(xPosition, 0, zPosition + width)
         });
 
-        uvs.AddRange(new [] {
+        uvs.AddRange(new[] {
             new Vector2(0, 1),
             new Vector2(1, 1),
             new Vector2(0, 0),
@@ -212,11 +248,13 @@ public partial class Clipmap : Node3D {
         });
     }
 
-    private List<float> CalculateTangents(List<Vector3> vertices, List<Vector2> uvs) {
+    private List<float> CalculateTangents(List<Vector3> vertices, List<Vector2> uvs)
+    {
         var tangents = new List<float>();
         int triangleCount = vertices.Count / 3;
 
-        for (int i = 0; i < triangleCount; i++) {
+        for (int i = 0; i < triangleCount; i++)
+        {
             var v0 = vertices[i * 3];
             var v1 = vertices[i * 3 + 1];
             var v2 = vertices[i * 3 + 2];
@@ -258,7 +296,21 @@ public partial class Clipmap : Node3D {
         return tangents;
     }
 
-    public void UpdateAABB() {
+    public void UpdateAABB()
+    {
+        // Godot 4.x compatibility fix: Validate terrain data exists before updating AABB
+        // Prevents NullReferenceException during terrain initialization
+        if (TerrainZones == null || TerrainZones.Zones == null || TerrainZones.Zones.Length == 0)
+        {
+            return;
+        }
+
+        // Ensure mesh is created before trying to update its bounding box
+        if (_clipmapMesh == null || _clipmapMesh.Mesh == null)
+        {
+            return;
+        }
+
         var zonePositions = TerrainZones.Zones.Select(zone => zone.ZonePosition).ToArray();
         var maxX = zonePositions.Max(x => Math.Abs(x.X));
         var maxY = zonePositions.Max(x => Math.Abs(x.Y));
@@ -267,10 +319,11 @@ public partial class Clipmap : Node3D {
         var aabbYSize = Math.Max(maxY * ZonesSize * 2, ZonesSize * 2);
         var aabbXPoint = -(aabbXSize / 2);
         var aabbYPoint = -(aabbYSize / 2);
-        ((ArrayMesh) _clipmapMesh.Mesh).CustomAabb = new Aabb(new Vector3(aabbXPoint, Math.Max(aabbXPoint, aabbYPoint), aabbYPoint), new Vector3(aabbXSize, Math.Max(aabbXSize, aabbYSize), aabbYSize));
+        ((ArrayMesh)_clipmapMesh.Mesh).CustomAabb = new Aabb(new Vector3(aabbXPoint, Math.Max(aabbXPoint, aabbYPoint), aabbYPoint), new Vector3(aabbXSize, Math.Max(aabbXSize, aabbYSize), aabbYSize));
     }
 
-    private void UpdateShaderOffsetPosition() {
+    private void UpdateShaderOffsetPosition()
+    {
         _clipmapShader.SetShaderParameter(StringNames.OffsetPosition, GlobalPosition);
     }
 }
